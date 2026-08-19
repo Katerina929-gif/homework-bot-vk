@@ -47,7 +47,7 @@ def check_tokens():
         for token in missing_tokens:
             logger.critical(
                 f"Отсутствует обязательная переменная окружения: '{token}'"
-                )
+            )
         logger.critical("Программа принудительно остановлена.")
         return False
     return True
@@ -80,7 +80,7 @@ def get_api_answer(timestamp):
         raise ConnectionError(
             f"Сбой в работе программы: Эндпоинт {ENDPOINT} недоступен."
             f"Ошибка: {error}"
-            )
+        )
 
     if response.status_code != 200:
 
