@@ -45,7 +45,9 @@ def check_tokens():
 
     if missing_tokens:
         for token in missing_tokens:
-            logger.critical(f"Отсутствует обязательная переменная окружения: '{token}'")
+            logger.critical(
+                f"Отсутствует обязательная переменная окружения: '{token}'"
+                )
         logger.critical("Программа принудительно остановлена.")
         return False
     return True
@@ -75,13 +77,16 @@ def get_api_answer(timestamp):
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=payload)
     except Exception as error:
-
-        raise ConnectionError(f"Сбой в работе программы: Эндпоинт {ENDPOINT} недоступен. Ошибка: {error}")
+        raise ConnectionError(
+            f"Сбой в работе программы: Эндпоинт {ENDPOINT} недоступен."
+            f"Ошибка: {error}"
+            )
 
     if response.status_code != 200:
 
         raise requests.exceptions.HTTPError(
-            f"Сбой в работе программы: Эндпоинт {ENDPOINT} недоступен. Код ответа API: {response.status_code}"
+            f"Сбой в работе программы: Эндпоинт {ENDPOINT} недоступен."
+            f"Код ответа API: {response.status_code}"
         )
     return response.json()
 
@@ -103,7 +108,9 @@ def check_response(response):
 def parse_status(homework):
     """Извлекает из информации о конкретной домашней работе её статус."""
     if 'homework_name' not in homework:
-        raise KeyError("В данных домашней работы отсутствует ключ 'homework_name'")
+        raise KeyError(
+            "В данных домашней работы отсутствует ключ 'homework_name'"
+        )
     if 'status' not in homework:
         raise KeyError("В данных домашней работы отсутствует ключ 'status'")
 
@@ -111,7 +118,8 @@ def parse_status(homework):
     status = homework['status']
 
     if status not in HOMEWORK_VERDICTS:
-        raise ValueError(f"Неожиданный статус домашней работы, обнаруженный в ответе API: {status}")
+        raise ValueError(f"Неожиданный статус домашней работы,"
+                         f"обнаруженный в ответе API: {status}")
 
     verdict = HOMEWORK_VERDICTS[status]
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
