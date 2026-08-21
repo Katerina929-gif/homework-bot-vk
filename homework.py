@@ -1,14 +1,19 @@
+"""Бот-ассистент для отслеживания статуса проверки домашних заданий в VK."""
+
+from http import HTTPStatus
 import logging
 import os
-import random
 import sys
 import time
+
+from dotenv import load_dotenv
 import requests
 import vk_api
-from dotenv import load_dotenv
+from vk_api.utils import get_random_id
+
+from exceptions import APIConnectionError, APIResponseError, JSONDecodeError
 
 load_dotenv()
-
 
 PRACTICUM_TOKEN = os.getenv('PRACTICUM_TOKEN')
 VK_TOKEN = os.getenv('VK_TOKEN')
@@ -23,7 +28,6 @@ HOMEWORK_VERDICTS = {
     'reviewing': 'Работа взята на проверку ревьюером.',
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
 }
-
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -44,11 +48,10 @@ def check_tokens():
     missing_tokens = [name for name, value in tokens.items() if not value]
 
     if missing_tokens:
-        for token in missing_tokens:
-            logger.critical(
-                f"Отсутствует обязательная переменная окружения: '{token}'"
-            )
-        logger.critical("Программа принудительно остановлена.")
+        logger.critical(
+            f'Отсутствуют обязательные переменные окружения: '
+            f'{", ".join(missing_tokens)}. Программа принудительно остановлена'
+        )
         return False
     return True
 
@@ -59,15 +62,13 @@ def send_message(vk, message):
         vk.messages.send(
             user_id=int(VK_USER_ID),
             message=message,
-            random_id=random.randint(-2147483648, 2147483647),
+            random_id=get_random_id(),
             v='5.131'
         )
-
         logger.debug(f'Бот отправил сообщение "{message}"')
         return True
     except Exception as error:
-
-        logger.error(f"Сбой при отправке сообщения в VK: {error}")
+        logger.error(f'Сбой при отправке сообщения в VK: {error}')
         return False
 
 
@@ -77,30 +78,35 @@ def get_api_answer(timestamp):
     try:
         response = requests.get(ENDPOINT, headers=HEADERS, params=payload)
     except Exception as error:
-        raise ConnectionError(
-            f"Сбой в работе программы: Эндпоинт {ENDPOINT} недоступен."
-            f"Ошибка: {error}"
+        raise APIConnectionError(
+            f'Сбой в работе программы: Эндпоинт {ENDPOINT} недоступен. '
+            f'Ошибка сети: {error}'
         )
 
-    if response.status_code != 200:
-
-        raise requests.exceptions.HTTPError(
-            f"Сбой в работе программы: Эндпоинт {ENDPOINT} недоступен."
-            f"Код ответа API: {response.status_code}"
+    if response.status_code != HTTPStatus.OK:
+        raise APIResponseError(
+            f'Сбой в работе программы: Эндпоинт {ENDPOINT} недоступен. '
+            f'Код ответа API: {response.status_code}'
         )
-    return response.json()
+
+    try:
+        return response.json()
+    except ValueError as error:
+        raise JSONDecodeError(
+            f'Ответ сервера не удалось преобразовать в формат JSON: {error}'
+        )
 
 
 def check_response(response):
     """Проверяет ответ API на соответствие документации."""
     if not isinstance(response, dict):
-        raise TypeError("Ответ API должен быть словарем")
+        raise TypeError('Ответ API должен быть словарем')
 
     if 'homeworks' not in response:
-        raise KeyError("В ответе API отсутствует ожидаемый ключ 'homeworks'")
+        raise KeyError('В ответе API отсутствует ожидаемый ключ "homeworks"')
 
     if not isinstance(response['homeworks'], list):
-        raise TypeError("Значение ключа 'homeworks' должно быть списком")
+        raise TypeError('Значение ключа "homeworks" должно быть списком')
 
     return True
 
@@ -109,17 +115,19 @@ def parse_status(homework):
     """Извлекает из информации о конкретной домашней работе её статус."""
     if 'homework_name' not in homework:
         raise KeyError(
-            "В данных домашней работы отсутствует ключ 'homework_name'"
+            'В данных домашней работы отсутствует ключ \'homework_name\''
         )
     if 'status' not in homework:
-        raise KeyError("В данных домашней работы отсутствует ключ 'status'")
+        raise KeyError('В данных домашней работы отсутствует ключ \'status\'')
 
     homework_name = homework['homework_name']
     status = homework['status']
 
     if status not in HOMEWORK_VERDICTS:
-        raise ValueError(f"Неожиданный статус домашней работы,"
-                         f"обнаруженный в ответе API: {status}")
+        raise ValueError(
+            f'Неожиданный статус домашней работы, '
+            f'обнаруженный в ответе API: {status}'
+        )
 
     verdict = HOMEWORK_VERDICTS[status]
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
@@ -136,12 +144,11 @@ def main():
 
     last_error_message = ""
 
-    logger.info("Homework Bot успешно запущен!")
+    logger.info('Homework Bot успешно запущен!')
 
     while True:
         try:
             response = get_api_answer(timestamp)
-
             check_response(response)
 
             homeworks = response.get('homeworks')
@@ -149,12 +156,12 @@ def main():
                 message = parse_status(homeworks[0])
                 send_message(vk, message)
             else:
-                logger.debug("Отсутствие в ответе новых статусов.")
+                logger.debug('Отсутствие в ответе новых статусов.')
             timestamp = response.get('current_date', int(time.time()))
             last_error_message = ""
 
         except Exception as error:
-            error_message = f"Сбой в работе программы: {error}"
+            error_message = f'Сбой в работе программы: {error}'
             logger.error(error_message)
             if error_message != last_error_message:
                 if send_message(vk, error_message):
