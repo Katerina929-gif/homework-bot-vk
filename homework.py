@@ -26,14 +26,14 @@ HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 HOMEWORK_VERDICTS = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
     'reviewing': 'Работа взята на проверку ревьюером.',
-    'rejected': 'Работа проверена: у ревьюера есть замечания.'
+    'rejected': 'Работа проверена: у ревьюера есть замечания.',
 }
 
 logging.basicConfig(
     level=logging.DEBUG,
     handlers=[logging.StreamHandler(sys.stdout)],
     format='%(asctime)s [%(levelname)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    datefmt='%Y-%m-%d %H:%M:%S',
 )
 logger = logging.getLogger(__name__)
 
@@ -43,13 +43,13 @@ def check_tokens():
     tokens = {
         'PRACTICUM_TOKEN': PRACTICUM_TOKEN,
         'VK_TOKEN': VK_TOKEN,
-        'VK_USER_ID': VK_USER_ID
+        'VK_USER_ID': VK_USER_ID,
     }
     missing_tokens = [name for name, value in tokens.items() if not value]
 
     if missing_tokens:
         logger.critical(
-            f'Отсутствуют обязательные переменные окружения: '
+            'Отсутствуют обязательные переменные окружения: '
             f'{", ".join(missing_tokens)}. Программа принудительно остановлена'
         )
         return False
@@ -63,7 +63,7 @@ def send_message(vk, message):
             user_id=int(VK_USER_ID),
             message=message,
             random_id=get_random_id(),
-            v='5.131'
+            v='5.131',
         )
         logger.debug(f'Бот отправил сообщение "{message}"')
         return True
@@ -115,17 +115,17 @@ def parse_status(homework):
     """Извлекает из информации о конкретной домашней работе её статус."""
     if 'homework_name' not in homework:
         raise KeyError(
-            'В данных домашней работы отсутствует ключ \'homework_name\''
+            "В данных домашней работы отсутствует ключ 'homework_name'"
         )
     if 'status' not in homework:
-        raise KeyError('В данных домашней работы отсутствует ключ \'status\'')
+        raise KeyError("В данных домашней работы отсутствует ключ 'status'")
 
     homework_name = homework['homework_name']
     status = homework['status']
 
     if status not in HOMEWORK_VERDICTS:
         raise ValueError(
-            f'Неожиданный статус домашней работы, '
+            'Неожиданный статус домашней работы, '
             f'обнаруженный в ответе API: {status}'
         )
 
@@ -142,7 +142,7 @@ def main():
     vk = vk_session.get_api()
     timestamp = int(time.time())
 
-    last_error_message = ""
+    last_error_message = ''
 
     logger.info('Homework Bot успешно запущен!')
 
@@ -158,7 +158,7 @@ def main():
             else:
                 logger.debug('Отсутствие в ответе новых статусов.')
             timestamp = response.get('current_date', int(time.time()))
-            last_error_message = ""
+            last_error_message = ''
 
         except Exception as error:
             error_message = f'Сбой в работе программы: {error}'

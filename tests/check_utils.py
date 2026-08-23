@@ -23,9 +23,7 @@ def check_function(scope: ModuleType, func_name: str, params_qty: int = 0):
 
     func = getattr(scope, func_name)
 
-    assert callable(func), (
-        f'`{func_name}` должна быть функцией'
-    )
+    assert callable(func), f'`{func_name}` должна быть функцией'
 
     sig = signature(func)
     assert len(sig.parameters) == params_qty, (
@@ -39,9 +37,9 @@ def check_docstring(scope: ModuleType, func_name: str):
         f'Не найдена функция `{func_name}`. '
         'Не удаляйте и не переименовывайте её.'
     )
-    assert getattr(scope, func_name).__doc__, (
-        f'Убедитесь, что в функции `{func_name}` есть docstring.'
-    )
+    assert getattr(
+        scope, func_name
+    ).__doc__, f'Убедитесь, что в функции `{func_name}` есть docstring.'
 
 
 def check_default_var_exists(scope: ModuleType, var_name: str) -> None:
@@ -57,9 +55,9 @@ def check_default_var_exists(scope: ModuleType, var_name: str) -> None:
         'Не удаляйте и не переименовывайте ее.'
     )
     var = getattr(scope, var_name)
-    assert not callable(var), (
-        f'`{var_name}` должна быть переменной, а не функцией.'
-    )
+    assert not callable(
+        var
+    ), f'`{var_name}` должна быть переменной, а не функцией.'
 
 
 @contextmanager
@@ -71,7 +69,8 @@ def check_logging(caplog, level, message):
     with caplog.at_level(level):
         yield
         log_record = [
-            record for record in caplog.records
+            record
+            for record in caplog.records
             if record.levelname == logging.getLevelName(level)
         ]
         assert len(log_record) > 0, message
@@ -84,17 +83,18 @@ class MockResponseGET:
     CALLED_LOG_MSG = 'Request is sent'
 
     def __init__(
-            self, *args, random_timestamp=None, http_status=HTTPStatus.OK,
-            data=None, **kwargs
+        self,
+        *args,
+        random_timestamp=None,
+        http_status=HTTPStatus.OK,
+        data=None,
+        **kwargs,
     ):
         self.random_timestamp = random_timestamp
         self.status_code = http_status
         self.reason = ''
         self.text = ''
-        default_data = {
-            'homeworks': [],
-            'current_date': self.random_timestamp
-        }
+        default_data = {'homeworks': [], 'current_date': self.random_timestamp}
         self.data = data if data is not None else default_data
         logging.warning(MockResponseGET.CALLED_LOG_MSG)
 

@@ -4,7 +4,7 @@
 class APIResponseError(Exception):
     """Вызывается, если API Практикума возвращает код, отличный от 200."""
 
-    pass
+    ...
 
 
 class APIConnectionError(Exception):
